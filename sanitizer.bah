@@ -88,6 +88,7 @@ nsReplace(s string*, nd cpstring, rl cpstring) {
 main(args []cpstring) {
     flags = flags{}
     flags.addString("file", "The file to sanitize")
+    flags.addString("code", "The code to sanitize")
     flags.parse(args)
 
     if flags.isSet("file") == 0 {
@@ -101,16 +102,23 @@ main(args []cpstring) {
 
     fm = fileMap{}
     fileName cpstring
-    if flags.isSet("file") == 0 {
-        flags.invalidate()
-    }
-    fileName = flags.get("file")
+    f = ""
+
+
+    if flags.isSet("code") {
+        f = flags.get("code")
+    }else {
     
-    f = fm.open(fileName)
-    file = string(f)
-    fm.close()
+        if flags.isSet("file") == 0 {
+            flags.invalidate()
+        }
+        fileName = flags.get("file")
+        
+        f = fm.open(fileName)
+        fm.close()
+    }
 
-
+        file = string(f)
     i=0; for i < len(operators) {
         o = operators[i]
         nsReplace(&file, o, " "+o+" ")
@@ -222,9 +230,13 @@ main(args []cpstring) {
 
     nfs = joinString(nl, "\n")
 
-    fs = fileStream{}
-    fs.open(fileName, "w")
-    fs.writeFile(nfs)
-    fs.close()
+    if flags.isSet("code") {
+        print(nfs)
+    }else {
+        fs = fileStream{}
+        fs.open(fileName, "w")
+        fs.writeFile(nfs)
+        fs.close()
+    }
 
 }
