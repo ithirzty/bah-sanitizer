@@ -1,0 +1,229 @@
+#include "iostream.bah"
+#include "string.bah"
+#include "flags.bah"
+
+#cLib "g"
+
+nsReplace(s string*, nd cpstring, rl cpstring) {
+    needle = string{}
+        needle.set(nd)
+        repl = string{}
+        repl.set(rl)
+        i = 0
+        si = 0
+        replcBuff = string{}
+        replcBuff.set("")
+        buff = []char
+        isString = false
+        for i < s.length {
+            
+            c = s.charAt(i)
+
+            if c == '"' {
+                if i > 0 {
+                    pc = s.charAt(i-1)
+                    if pc != <char>92 {
+                        if isString {
+                            isString = false
+                            buff[len(buff)] = c
+                            i++
+                            continue
+                        } else {
+                            isString = true
+                            si = 0
+                            ii = 0; for ii < replcBuff.length {
+                                buff[len(buff)] = replcBuff.charAt(ii)
+                                ii = ii + 1
+                            }
+                            replcBuff.set("")
+                        }
+                    }
+                }
+            }
+
+            if isString {
+                buff[len(buff)] = c
+                i++
+                continue
+            }
+
+            rc = needle.charAt(si)
+            
+            if c == rc {
+                si = si + 1
+                cs = charToString(c)
+                replcBuff.append(cs)
+            } else {
+                if replcBuff.length > 0 {
+                    si = 0
+                    ii = 0; for ii < replcBuff.length {
+                        buff[len(buff)] = replcBuff.charAt(ii)
+                        ii = ii + 1
+                    }
+                    replcBuff.set("")
+                }
+                buff[len(buff)] = c
+            }
+
+            if si == needle.length {
+                replcBuff.set("")
+                ii = 0; for ii < repl.length {
+                    buff[len(buff)] = repl.charAt(ii)
+                    ii = ii + 1
+                }
+                si = 0
+            }
+
+            i = i + 1
+        }
+        r cpstring
+        noCheck(r = buff->data)
+        if replcBuff.length > 0 {
+            replbuffStr = replcBuff.str()
+            r += replbuffStr
+        }
+        s.set(r)
+}
+
+main(args []cpstring) {
+    flags = flags{}
+    flags.addString("file", "The file to sanitize")
+    flags.parse(args)
+
+    if flags.isSet("file") == 0 {
+        //flags.invalidate()
+    }
+
+    operators = []cpstring{"==", "!=", "<=", ">=", "+", "-", "/", "%", "=", "<", ">", "|", "||", "&&"}
+    enclavers = []cpstring{"{", "}", "(", ")", "[", "]"}
+    keywords = []cpstring{"#include", "#define", "if", "else"}
+
+
+    fm = fileMap{}
+    fileName cpstring
+    if flags.isSet("file") == 0 {
+        flags.invalidate()
+    }
+    fileName = flags.get("file")
+    
+    f = fm.open(fileName)
+    file = string(f)
+    fm.close()
+
+
+    i=0; for i < len(operators) {
+        o = operators[i]
+        nsReplace(&file, o, " "+o+" ")
+        i++
+    }
+
+    nsReplace(&file, "{", " {")
+    nsReplace(&file, " \n", "\n")
+    nsReplace(&file, "}else", "} else")
+
+
+    nf = []char
+    lastPref = ""
+    i=0; for i < file.length {
+        c = file.charAt(i)
+        if len(nf) > 0 {
+            pc = nf[len(nf)-1]
+
+            if isSpace(pc) && isSpace(c) {
+                nf[len(nf)-1] = c
+                i++
+                continue
+            }
+        }
+
+        nf[len(nf)] = c
+        i++
+    }
+
+
+    nfs = string(arrToStr(nf))
+
+    nsReplace(&nfs, "= =", "==")
+    nsReplace(&nfs, "/ /", "//")
+    nsReplace(&nfs, "- >", "->")
+    nsReplace(&nfs, "! =", "!=")
+    nsReplace(&nfs, "< =", "<=")
+    nsReplace(&nfs, "> =", ">=")
+    nsReplace(&nfs, " :", ":")
+    nsReplace(&nfs, "( ", "(")
+    nsReplace(&nfs, " (", "(")
+    nsReplace(&nfs, " )", ")")
+    nsReplace(&nfs, " + +", "++")
+    nsReplace(&nfs, ";for ", "; for ")
+
+    lines = splitString(nfs, "\n")
+
+    scope = 0
+    nl = []string
+    firstLinePassed = false
+    i=0; for i < len(lines) {
+        l = lines[i]
+        if l.length == 0{
+            i++
+            continue
+        }
+        lCount = l.count("{")
+        rCount = l.count("}")
+        scope = scope - rCount
+        if rCount > 0 {
+            if lCount > 0 {
+                if l.hasPrefix("}") == 0 {
+                    l.prepend("    ")
+                }
+            }
+        }
+
+
+        ii=0; for ii < scope {
+            l.prepend("    ")
+            ii++
+        }
+        if scope == 0 {
+            if lCount > 0 {
+                if rCount == 0 {
+                    if firstLinePassed {
+                        l.prepend("\n")
+                    }
+                }
+            }
+        }
+        scope = scope + lCount
+        if scope == 0 {
+            if l.hasPrefix("#") {
+                currentPref = splitStringBefore(l, " ")
+                if lastPref != currentPref {
+                    lastPref = currentPref
+                    if firstLinePassed {
+                        l.prepend("\n")
+                    }
+                }
+            } else if l.hasPrefix("struct ") {
+                if firstLinePassed {
+                    l.prepend("\n")
+                }
+            } else {
+                l.append("\n")
+            }
+        }
+        nl[len(nl)] = l
+        if firstLinePassed == false {
+            if l.length > 0 {
+                firstLinePassed = true
+            }
+        }
+        i++
+    }
+
+    nfs = joinString(nl, "\n")
+
+    fs = fileStream{}
+    fs.open(fileName, "w")
+    fs.writeFile(nfs)
+    fs.close()
+
+}

@@ -1,0 +1,59 @@
+#include "iostream.bah"
+#include "time.bah"
+const MAX = 9999
+
+
+fizzBuzzString() {
+
+
+
+
+    s = string("")
+    i = 0; for i < MAX {
+    i3 = i % 3
+        i5 = i % 5
+        if i3 == 0 {
+    s.append("Fizz")
+                    }
+        if i5 == 0 {
+            s.append("Buzz")
+        }
+        if s.length == 0 {
+            s.append(intToStr(i))
+        }
+        s.set("")
+    i + + }
+}
+
+
+fizzBuzzStr() {
+    s = ""
+    i =0; for i<       MAX  {
+        i3 = i % 3
+        i5 = i % 5
+        if i3 == 0 {
+                 s = s + "Fizz"
+        }
+        if i5 == 0 {
+            s = s + "Buzz"
+        }
+        if strlen(s ) ==  0  {
+            si = intToStr(i)
+            s = s +si
+        }
+        s = ""
+    i + + 
+    }
+}
+
+
+main ( ) {
+    start = getTimeUnix()
+    fizzBuzzString()
+duration = intToStr(getTimeUnix() - start)
+                println("Done string version in " + duration + "ns.")
+    start = getTimeUnix()
+    fizzBuzzStr()
+    duration = intToStr(getTimeUnix() - start)
+    println("Done cpstring version in " + duration + "ns.")
+}
