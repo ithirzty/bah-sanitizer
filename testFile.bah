@@ -22,7 +22,8 @@ fizzBuzzString() {
             s.append(intToStr(i))
         }
         s.set("")
-    i + + }
+    i + + 
+    }
 }
 
 

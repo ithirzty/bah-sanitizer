@@ -120,7 +120,7 @@ main(args []cpstring) {
     nsReplace(&file, "{", " {")
     nsReplace(&file, " \n", "\n")
     nsReplace(&file, "}else", "} else")
-
+    nsReplace(&file, ",", ", ")
 
     nf = []char
     lastPref = ""
@@ -155,6 +155,7 @@ main(args []cpstring) {
     nsReplace(&nfs, " )", ")")
     nsReplace(&nfs, " + +", "++")
     nsReplace(&nfs, ";for ", "; for ")
+    nsReplace(&nfs, " ,", ",")
 
     lines = splitString(nfs, "\n")
 
