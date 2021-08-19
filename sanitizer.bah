@@ -2,27 +2,24 @@
 #include "string.bah"
 #include "flags.bah"
 
-#cLib "g"
-
 nsReplace(s string*, nd cpstring, rl cpstring) {
-    needle = string{}
-        needle.set(nd)
-        repl = string{}
-        repl.set(rl)
-        i = 0
-        si = 0
-        replcBuff = string{}
-        replcBuff.set("")
-        buff = []char
-        isString = false
-        for i < s.length {
-            
-            c = s.charAt(i)
-
-            if c == '"' {
-                if i > 0 {
-                    pc = s.charAt(i-1)
-                    if pc != <char>92 {
+    needle = string {}
+    needle.set(nd)
+    repl = string {}
+    repl.set(rl)
+    i = 0
+    si = 0
+    replcBuff = string {}
+    replcBuff.set("")
+    buff = []char
+    isString = false
+    for i < s.length {
+        c = s.charAt(i)
+        if c == '"' {
+            if i > 0 {
+                pc = s.charAt(i - 1)
+                if pc != < char > 92 {
+                    if pc != < char > 39 {
                         if isString {
                             isString = false
                             buff[len(buff)] = c
@@ -40,117 +37,148 @@ nsReplace(s string*, nd cpstring, rl cpstring) {
                     }
                 }
             }
-
-            if isString {
-                buff[len(buff)] = c
-                i++
-                continue
-            }
-
-            rc = needle.charAt(si)
-            
-            if c == rc {
-                si = si + 1
-                cs = charToString(c)
-                replcBuff.append(cs)
-            } else {
-                if replcBuff.length > 0 {
-                    si = 0
-                    ii = 0; for ii < replcBuff.length {
-                        buff[len(buff)] = replcBuff.charAt(ii)
-                        ii = ii + 1
-                    }
-                    replcBuff.set("")
-                }
-                buff[len(buff)] = c
-            }
-
-            if si == needle.length {
-                replcBuff.set("")
-                ii = 0; for ii < repl.length {
-                    buff[len(buff)] = repl.charAt(ii)
+        }
+        if isString {
+            buff[len(buff)] = c
+            i++
+            continue
+        }
+        rc = needle.charAt(si)
+        if c == rc {
+            si = si + 1
+            cs = charToString(c)
+            replcBuff.append(cs)
+        } else {
+            if replcBuff.length > 0 {
+                si = 0
+                ii = 0; for ii < replcBuff.length {
+                    buff[len(buff)] = replcBuff.charAt(ii)
                     ii = ii + 1
                 }
-                si = 0
+                replcBuff.set("")
             }
-
-            i = i + 1
+            buff[len(buff)] = c
         }
-        r cpstring
-        noCheck(r = buff->data)
-        if replcBuff.length > 0 {
-            replbuffStr = replcBuff.str()
-            r += replbuffStr
+        if si == needle.length {
+            replcBuff.set("")
+            ii = 0; for ii < repl.length {
+                buff[len(buff)] = repl.charAt(ii)
+                ii = ii + 1
+            }
+            si = 0
         }
-        s.set(r)
+        i = i + 1
+    }
+    r cpstring
+    noCheck(r = buff -> data)
+    if replcBuff.length > 0 {
+        replbuffStr = replcBuff.str()
+        r + = replbuffStr
+    }
+    s.set(r)
 }
 
+
+removeStr(s string*) {
+    ns = []char
+    isString = false
+    i = 0; for i < s.length {
+        c = s.charAt(i)
+        if c == '"' {
+            if i > 0 {
+                pc = s.charAt(i - 1)
+                if pc != < char > 92 {
+                    if pc != < char > 39 {
+                        if isString {
+                            isString = false
+                            i++
+                            continue
+                        } else {
+                            isString = true
+                        }
+                    }
+                }
+            }
+        }
+        if isString == false {
+            ns[len(ns)] = c
+        }
+        i++
+    }
+    s.set(arrAsStr(ns))
+}
+
+
 main(args []cpstring) {
-    flags = flags{}
+    flags = flags {}
     flags.addString("file", "The file to sanitize")
     flags.addString("code", "The code to sanitize")
     flags.parse(args)
-
-    if flags.isSet("file") == 0 {
-        //flags.invalidate()
-    }
-
-    operators = []cpstring{"==", "!=", "<=", ">=", "+", "-", "/", "%", "=", "<", ">", "|", "||", "&&"}
-    enclavers = []cpstring{"{", "}", "(", ")", "[", "]"}
-    keywords = []cpstring{"#include", "#define", "if", "else"}
-
-
-    fm = fileMap{}
+    operators = []cpstring {"==", "!=", "<=", ">=", "+", "-", "/", "%", "=", "<", ">", "|", "||", "&&"}
+    enclavers = []cpstring {"{", "}", "(", ")", "[", "]"}
+    keywords = []cpstring {"#include", "#define", "if", "else"}
+    fm = fileMap {}
     fileName cpstring
     f = ""
-
-
     if flags.isSet("code") {
         f = flags.get("code")
-    }else {
-    
+    } else {
         if flags.isSet("file") == 0 {
             flags.invalidate()
         }
         fileName = flags.get("file")
-        
         f = fm.open(fileName)
         fm.close()
     }
-
-        file = string(f)
-    i=0; for i < len(operators) {
+    file = string(f)
+    i = 0; for i < len(operators) {
         o = operators[i]
-        nsReplace(&file, o, " "+o+" ")
+        nsReplace(&file, o, " " + o + " ")
         i++
     }
-
     nsReplace(&file, "{", " {")
     nsReplace(&file, " \n", "\n")
     nsReplace(&file, "}else", "} else")
     nsReplace(&file, ",", ", ")
-
     nf = []char
     lastPref = ""
-    i=0; for i < file.length {
+    isString = false
+    i = 0; for i < file.length {
         c = file.charAt(i)
+        if c == '"' {
+            if i > 0 {
+                pc = file.charAt(i - 1)
+                if pc != < char > 92 {
+                    if pc != < char > 39 {
+                        if isString {
+                            isString = false
+                            nf[len(nf)] = c
+                            i++
+                            continue
+                        } else {
+                            isString = true
+                        }
+                    }
+                }
+            }
+        }
+        if isString {
+            nf[len(nf)] = c
+            i++
+            continue
+        }
         if len(nf) > 0 {
-            pc = nf[len(nf)-1]
-
+            pc = nf[len(nf) - 1]
             if isSpace(pc) && isSpace(c) {
-                nf[len(nf)-1] = c
+                nf[len(nf) - 1] = c
                 i++
                 continue
             }
         }
-
         nf[len(nf)] = c
         i++
     }
-
-
     nfs = string(arrToStr(nf))
-
     nsReplace(&nfs, "= =", "==")
     nsReplace(&nfs, "/ /", "//")
     nsReplace(&nfs, "- >", "->")
@@ -164,20 +192,20 @@ main(args []cpstring) {
     nsReplace(&nfs, " + +", "++")
     nsReplace(&nfs, ";for ", "; for ")
     nsReplace(&nfs, " ,", ",")
-
     lines = splitString(nfs, "\n")
-
     scope = 0
     nl = []string
     firstLinePassed = false
-    i=0; for i < len(lines) {
+    i = 0; for i < len(lines) {
         l = lines[i]
-        if l.length == 0{
+        if l.length == 0 {
             i++
             continue
         }
-        lCount = l.count("{")
-        rCount = l.count("}")
+        nsl = string(l)
+        removeStr(&nsl)
+        lCount = nsl.count("{")
+        rCount = nsl.count("}")
         scope = scope - rCount
         if rCount > 0 {
             if lCount > 0 {
@@ -186,9 +214,7 @@ main(args []cpstring) {
                 }
             }
         }
-
-
-        ii=0; for ii < scope {
+        ii = 0; for ii < scope {
             l.prepend("    ")
             ii++
         }
@@ -227,16 +253,13 @@ main(args []cpstring) {
         }
         i++
     }
-
     nfs = joinString(nl, "\n")
-
     if flags.isSet("code") {
         print(nfs)
-    }else {
-        fs = fileStream{}
+    } else {
+        fs = fileStream {}
         fs.open(fileName, "w")
         fs.writeFile(nfs)
         fs.close()
     }
-
 }
